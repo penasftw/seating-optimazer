@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Wedding Seating Optimizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-8 text-slate-800">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <header class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900">Seating Optimizer MVP</h1>
+        <p class="text-slate-500">Carga la plantilla Excel y ajusta las mesas manualmente</p>
+      </div>
+      <div id="scoreBadge" class="hidden bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg font-semibold">
+        Puntuación: <span id="scoreValue">0</span>
+      </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 flex items-center justify-between">
+      <input type="file" id="excelFile" accept=".xlsx, .xlsm" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+      <button onclick="uploadAndOptimize()" id="btnOptimize" class="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
+        Optimizar Mesas
+      </button>
+    </div>
+
+    <!-- Status / Loading -->
+    <div id="loading" class="hidden text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+      <p class="mt-2 text-slate-600 font-medium">Ejecutando algoritmo de optimización...</p>
+    </div>
+
+    <!-- Board de Mesas -->
+    <div id="tablesBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+
+  <script>
+    let draggedElement = null;
+
+    async function uploadAndOptimize() {
+      const fileInput = document.getElementById('excelFile');
+      if (!fileInput.files[0]) {
+        alert('Por favor selecciona un archivo Excel');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('tablesBoard').innerHTML = '';
+
+      try {
+        const res = await fetch('/optimize', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('scoreBadge').classList.remove('hidden');
+        document.getElementById('scoreValue').innerText = data.score;
+
+        renderTables(data.tables);
+      } catch (err) {
+        alert('Error procesando el archivo');
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+
+    function renderTables(tables) {
+      const board = document.getElementById('tablesBoard');
+      board.innerHTML = '';
+
+      Object.entries(tables).forEach(([tableName, guests]) => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col';
+        
+        card.innerHTML = `
+          <h3 class="font-bold text-slate-700 mb-3 pb-2 border-b border-slate-100 flex justify-between">
+            <span>${tableName}</span>
+            <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 count">${guests.length} invitados</span>
+          </h3>
+          <div class="drop-zone flex-1 min-h-[120px] space-y-2 p-1 rounded-lg transition" 
+               ondragover="allowDrop(event)" ondrop="drop(event)" ondragleave="clearHighlight(event)">
+          </div>
+        `;
+
+        const zone = card.querySelector('.drop-zone');
+        guests.forEach(guest => {
+          const item = document.createElement('div');
+          item.className = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 p-2.5 rounded-lg text-sm font-medium cursor-grab active:cursor-grabbing border border-indigo-100 shadow-sm transition';
+          item.innerText = guest;
+          item.draggable = true;
+          item.ondragstart = (e) => drag(e);
+          zone.appendChild(item);
+        });
+
+        board.appendChild(card);
+      });
+    }
+
+    // Drag and Drop Logic
+    function drag(e) {
+      draggedElement = e.target;
+      e.dataTransfer.setData("text/plain", e.target.innerText);
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('bg-indigo-50/50', 'border-2', 'border-dashed', 'border-indigo-300');
+    }
+
+    function clearHighlight(e) {
+      e.currentTarget.classList.remove('bg-indigo-50/50', 'border-2', 'border-dashed', 'border-indigo-300');
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      clearHighlight(e);
+      const zone = e.currentTarget;
+      if (draggedElement) {
+        zone.appendChild(draggedElement);
+        updateCounts();
+      }
+    }
+
+    function updateCounts() {
+      document.querySelectorAll('.bg-white').forEach(card => {
+        const count = card.querySelectorAll('.drop-zone > div').length;
+        const countEl = card.querySelector('.count');
+        if (countEl) countEl.innerText = `${count} invitados`;
+      });
+    }
+  </script>
+</body>
+</html>
