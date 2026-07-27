@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 import os
 
 # Importamos las funciones de tu optimizador existente
-from seating_optimizer import cargar_datos, simulated_annealing
+from .seating_optimizer import cargar_datos, simulated_annealing
 
 app = FastAPI(title="Wedding Seating Optimizer")
 
@@ -49,7 +49,7 @@ async def optimize(file: UploadFile = File(...)):
         peso = float(row["Peso"])
         affinity[(a, b)] = peso
 
-    from tables import CircularTable, RectangularTable, ImperialTable
+    from .tables import CircularTable, RectangularTable, ImperialTable
     TABLE_TYPES = {
         "circular": CircularTable,
         "rectangular": RectangularTable,
