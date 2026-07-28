@@ -15,7 +15,7 @@ import sys
 import random
 import math
 import pandas as pd
-from tables import Table, CircularTable, RectangularTable, ImperialTable
+from .tables import Table, CircularTable, RectangularTable, ImperialTable
 
 # ------------------------------------------------------------------
 # 1. CARGA DE DATOS
