@@ -25,10 +25,13 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    # Sirve directamente la interfaz frontend
-    if os.path.exists("index.html"):
-        return FileResponse("index.html")
-    return {"message": "API activa. Visita /docs para ver Swagger."}
+    # Construye la ruta exacta: Algoritmo/index.html
+    html_path = BASE_DIR / "index.html"
+    
+    if html_path.exists():
+        return FileResponse(html_path)
+    
+    return {"message": "API activa, pero no se encontró index.html en " + str(html_path)}
 
 @app.post("/optimize")
 async def optimize(file: UploadFile = File(...)):
@@ -81,8 +84,3 @@ async def optimize(file: UploadFile = File(...)):
         "score": final_score,
         "tables": tables_assignment
     }
-
-@app.get("/", response_class=FileResponse)
-def read_index():
-    # Devuelve el archivo index.html
-    return FileResponse(BASE_DIR / "index.html")
