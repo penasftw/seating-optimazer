@@ -4,11 +4,15 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 import os
+from pathlib import Path
 
 # Importamos las funciones de tu optimizador existente
 from .seating_optimizer import cargar_datos, simulated_annealing
 
-app = FastAPI(title="Wedding Seating Optimizer")
+app = FastAPI()
+
+# Obtenemos la ruta absoluta de la carpeta donde está este archivo (Algoritmo)
+BASE_DIR = Path(__file__).resolve().parent
 
 # Permitir solicitudes desde cualquier origen
 app.add_middleware(
@@ -77,3 +81,8 @@ async def optimize(file: UploadFile = File(...)):
         "score": final_score,
         "tables": tables_assignment
     }
+
+@app.get("/", response_class=FileResponse)
+def read_index():
+    # Devuelve el archivo index.html
+    return FileResponse(BASE_DIR / "index.html")
