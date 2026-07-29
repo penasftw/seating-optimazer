@@ -18,27 +18,43 @@ BASE_DIR = Path(__file__).resolve().parent
 # ------------------------------------------------------------------
 # FIREBASE / FIRESTORE
 # ------------------------------------------------------------------
-# Necesitas descargar tu "serviceAccountKey.json" desde:
-# Firebase Console > Configuración del proyecto > Cuentas de servicio > Generar nueva clave privada
-# y colocarlo en esta misma carpeta (Algoritmo/serviceAccountKey.json).
-# Ese archivo NUNCA debe subirse a git (ya está en .gitignore).
+# Dos formas de darle credenciales a este servidor:
+#
+# 1) LOCAL (desarrollo en tu máquina):
+#    Descarga "serviceAccountKey.json" desde
+#    Firebase Console > Configuración del proyecto > Cuentas de servicio > Generar nueva clave privada
+#    y colócalo en esta misma carpeta. Nunca se sube a git (está en .gitignore).
+#
+# 2) RENDER (producción):
+#    Render no tiene acceso a ese archivo porque no está en tu repo de GitHub.
+#    En su lugar, abre tu servicio en Render > Environment, y crea una variable:
+#      Key:   FIREBASE_SERVICE_ACCOUNT_JSON
+#      Value: (pega aquí TODO el contenido del archivo serviceAccountKey.json, tal cual, como una sola línea)
+#    El código de abajo detecta esa variable automáticamente y la usa en vez del archivo.
 
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 db = None
 SERVICE_ACCOUNT_PATH = BASE_DIR / "serviceAccountKey.json"
+SERVICE_ACCOUNT_ENV = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 
 try:
-    if SERVICE_ACCOUNT_PATH.exists():
+    if SERVICE_ACCOUNT_ENV:
+        cred_dict = json.loads(SERVICE_ACCOUNT_ENV)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+    elif SERVICE_ACCOUNT_PATH.exists():
         cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
         firebase_admin.initialize_app(cred)
         db = firestore.client()
     else:
         print(
-            f"[Aviso] No se encontró {SERVICE_ACCOUNT_PATH}. "
-            "Los endpoints /save-arrangement y /load-arrangement no funcionarán "
-            "hasta que agregues tu clave de Firebase."
+            "[Aviso] No se encontraron credenciales de Firebase (ni archivo local "
+            "ni variable de entorno FIREBASE_SERVICE_ACCOUNT_JSON). "
+            "Los endpoints /save-arrangement y /load-arrangement no funcionarán."
         )
 except Exception as e:
     print(f"[Aviso] No se pudo inicializar Firebase: {e}")
