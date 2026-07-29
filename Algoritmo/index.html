@@ -25,7 +25,11 @@
       <button onclick="uploadAndOptimize()" id="btnOptimize" class="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
         Optimizar Mesas
       </button>
+      <button onclick="saveArrangement()" id="btnSave" class="ml-2 hidden bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
+        Guardar
+      </button>
     </div>
+    <p id="saveStatus" class="text-sm text-slate-500 -mt-6 mb-6 hidden"></p>
 
     <!-- Status / Loading -->
     <div id="loading" class="hidden text-center py-12">
@@ -62,11 +66,69 @@
         document.getElementById('scoreValue').innerText = data.score;
 
         renderTables(data.tables);
+        document.getElementById('btnSave').classList.remove('hidden');
       } catch (err) {
         alert('Error procesando el archivo');
         document.getElementById('loading').classList.add('hidden');
       }
     }
+
+    // Lee el estado actual del tablero (incluyendo ajustes manuales de drag & drop)
+    function getCurrentBoardState() {
+      const tables = {};
+      document.querySelectorAll('#tablesBoard > div').forEach(card => {
+        const tableName = card.querySelector('h3 span').innerText;
+        const guests = Array.from(card.querySelectorAll('.drop-zone > div')).map(el => el.innerText);
+        tables[tableName] = guests;
+      });
+      return tables;
+    }
+
+    async function saveArrangement() {
+      const statusEl = document.getElementById('saveStatus');
+      statusEl.classList.remove('hidden');
+      statusEl.innerText = 'Guardando...';
+
+      const tables = getCurrentBoardState();
+      const score = parseFloat(document.getElementById('scoreValue').innerText) || null;
+
+      try {
+        const res = await fetch('/save-arrangement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tables, score })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Error al guardar');
+        }
+        statusEl.innerText = 'Guardado ✓';
+        setTimeout(() => statusEl.classList.add('hidden'), 2000);
+      } catch (err) {
+        statusEl.innerText = 'No se pudo guardar: ' + err.message;
+      }
+    }
+
+    async function loadSavedArrangement() {
+      try {
+        const res = await fetch('/load-arrangement');
+        if (!res.ok) return; // Firestore no configurado aún, o error - no pasa nada
+        const data = await res.json();
+        if (data.tables) {
+          renderTables(data.tables);
+          document.getElementById('btnSave').classList.remove('hidden');
+          if (data.score !== null && data.score !== undefined) {
+            document.getElementById('scoreBadge').classList.remove('hidden');
+            document.getElementById('scoreValue').innerText = data.score;
+          }
+        }
+      } catch (err) {
+        // Silencioso: si no hay nada guardado o el backend no tiene Firebase, no interrumpimos al usuario
+      }
+    }
+
+    // Al abrir la página, intenta restaurar la última distribución guardada
+    window.addEventListener('DOMContentLoaded', loadSavedArrangement);
 
     function renderTables(tables) {
       const board = document.getElementById('tablesBoard');
