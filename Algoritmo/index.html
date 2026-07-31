@@ -220,6 +220,7 @@
         invSelected: new Set(),
         boardPencil: new Set(), // table names currently in selection mode
         boardSelected: {}, // tableName -> Set(guestId)
+        boardDirty: new Set(), // guestIds moved on the board but not yet saved
       };
 
       /* ==================================================================
@@ -508,7 +509,10 @@
 
         payload.ids.forEach((id) => {
           const guest = state.guests.find((g) => g.id === id);
-          if (guest) guest.table_id = targetTable;
+          if (guest) {
+            guest.table_id = targetTable;
+            state.boardDirty.add(id);
+          }
         });
 
         if (payload.from && state.boardSelected[payload.from]) {
@@ -560,6 +564,7 @@
           state.score = data.score;
           if (data.guests) state.guests = data.guests;
           else await loadGuests();
+          state.boardDirty.clear();
 
           document.getElementById("loading").classList.add("hidden");
           const badge = document.getElementById("scoreBadge");
@@ -576,16 +581,37 @@
       async function saveArrangement() {
         const statusEl = document.getElementById("boardStatus");
         statusEl.innerText = "Guardando…";
-        const map = currentBoardMap();
-        const tables = {};
-        Object.entries(map).forEach(([name, guests]) => {
-          tables[name] = guests.map(guestFullName);
-        });
+
+        const dirtyIds = Array.from(state.boardDirty);
         try {
+          // Persistir table_id en cada invitado movido: el tablero se
+          // reconstruye desde los invitados, así que esto es lo que
+          // realmente hace que la distribución sobreviva a un refresh.
+          if (dirtyIds.length) {
+            await Promise.all(
+              dirtyIds.map((id) => {
+                const g = state.guests.find((x) => x.id === id);
+                if (!g) return Promise.resolve();
+                return apiSend(`/api/guests/${id}`, "PUT", {
+                  table_id: g.table_id,
+                });
+              }),
+            );
+            state.boardDirty.clear();
+          }
+
+          // Además guardamos un snapshot legible en arrangements/current
+          // (nombres por mesa + score), por si se quiere consultar aparte.
+          const map = currentBoardMap();
+          const tables = {};
+          Object.entries(map).forEach(([name, guests]) => {
+            tables[name] = guests.map(guestFullName);
+          });
           await apiSend("/save-arrangement", "POST", {
             tables,
             score: state.score,
           });
+
           statusEl.innerText = "Guardado ✓";
           setTimeout(() => {
             if (statusEl) statusEl.innerText = "";
