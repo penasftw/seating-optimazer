@@ -1,199 +1,1104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Wedding Seating Optimizer</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen p-8 text-slate-800">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mesas — Seating Optimizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #241c29;
+        --ink-soft: #362b3d;
+        --wine: #7c2d4a;
+        --wine-dark: #5e2038;
+        --wine-soft: #f4e6ea;
+        --gold: #b08d57;
+        --gold-soft: #f1e7d5;
+        --paper: #faf7f2;
+        --slate: #6b6470;
+        --line: #e7e1dd;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .font-display {
+        font-family: "Fraunces", serif;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d9d0c8;
+        border-radius: 4px;
+      }
 
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <header class="mb-8 flex justify-between items-center">
+      .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.65rem 1rem;
+        border-radius: 0.5rem;
+        color: #c9bfc4;
+        font-size: 0.925rem;
+        font-weight: 500;
+        border-left: 2px solid transparent;
+        transition: all 0.15s ease;
+      }
+      .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+      }
+      .sidebar-link.active {
+        background: rgba(176, 141, 87, 0.12);
+        color: #fff;
+        border-left: 2px solid var(--gold);
+      }
+
+      .btn-primary {
+        background: var(--wine);
+        color: #fff;
+        font-weight: 600;
+        padding: 0.55rem 1.1rem;
+        border-radius: 0.55rem;
+        transition: background 0.15s ease;
+        white-space: nowrap;
+      }
+      .btn-primary:hover {
+        background: var(--wine-dark);
+      }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background: #fff;
+        color: var(--ink);
+        font-weight: 600;
+        border: 1px solid var(--line);
+        padding: 0.55rem 1.1rem;
+        border-radius: 0.55rem;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+      }
+      .btn-secondary:hover {
+        border-color: var(--wine);
+        color: var(--wine);
+      }
+
+      .btn-ghost {
+        color: var(--slate);
+        font-weight: 500;
+      }
+      .btn-ghost:hover {
+        color: var(--wine);
+      }
+
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 0.85rem;
+      }
+
+      .th-sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      .th-sortable:hover {
+        color: var(--wine);
+      }
+
+      .modal-backdrop {
+        background: rgba(36, 28, 41, 0.45);
+      }
+
+      .group-dot {
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 999px;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+
+      .guest-chip {
+        background: var(--wine-soft);
+        border: 1px solid #e7d3da;
+        color: var(--wine-dark);
+        padding: 0.5rem 0.6rem;
+        border-radius: 0.6rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        cursor: grab;
+      }
+      .guest-chip:active {
+        cursor: grabbing;
+      }
+      .guest-chip.checked {
+        outline: 2px solid var(--gold);
+        outline-offset: 1px;
+      }
+
+      .drop-zone.drag-over {
+        background: var(--gold-soft);
+        outline: 2px dashed var(--gold);
+        outline-offset: -2px;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--ink);
+        color: #fff;
+        padding: 0.6rem 1.1rem;
+        border-radius: 0.6rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex min-h-screen">
+      <!-- ============ SIDEBAR ============ -->
+      <aside
+        class="w-60 shrink-0 flex flex-col py-6 px-3"
+        style="background: var(--ink)"
+      >
+        <div class="px-3 mb-8">
+          <p class="font-display text-xl text-white leading-tight">Mesas</p>
+          <p class="text-xs" style="color: #9a8fa0">Seating Optimizer</p>
+        </div>
+        <nav class="flex flex-col gap-1">
+          <a href="#/" class="sidebar-link" data-route="/"
+            ><span>📊</span><span>Mesas &amp; Optimizador</span></a
+          >
+          <a href="#/invitados" class="sidebar-link" data-route="/invitados"
+            ><span>👥</span><span>Administrar Invitados</span></a
+          >
+          <a href="#/grupos" class="sidebar-link" data-route="/grupos"
+            ><span>🏷️</span><span>Grupos</span></a
+          >
+        </nav>
+        <div class="mt-auto px-3 pt-6 text-xs" style="color: #75697d">
+          Firestore conectado en el backend
+        </div>
+      </aside>
+
+      <!-- ============ MAIN ============ -->
+      <main class="flex-1 min-w-0 p-8">
+        <div id="view-root" class="max-w-6xl mx-auto"></div>
+      </main>
+    </div>
+
+    <div id="toast-root"></div>
+
+    <script>
+      /* ==================================================================
+   STATE
+   ================================================================== */
+      const state = {
+        route: "/",
+        guests: [],
+        groups: [],
+        tables: [],
+        score: null,
+        invSort: { column: "id", dir: "asc" },
+        invSelected: new Set(),
+        boardPencil: new Set(), // table names currently in selection mode
+        boardSelected: {}, // tableName -> Set(guestId)
+      };
+
+      /* ==================================================================
+   API HELPERS
+   ================================================================== */
+      async function apiGet(url) {
+        const res = await fetch(url);
+        if (!res.ok)
+          throw new Error(
+            (await safeJson(res))?.detail || `Error ${res.status}`,
+          );
+        return res.json();
+      }
+      async function apiSend(url, method, body) {
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+        if (!res.ok)
+          throw new Error(
+            (await safeJson(res))?.detail || `Error ${res.status}`,
+          );
+        return res.json();
+      }
+      async function apiDelete(url) {
+        const res = await fetch(url, { method: "DELETE" });
+        if (!res.ok)
+          throw new Error(
+            (await safeJson(res))?.detail || `Error ${res.status}`,
+          );
+        return res.json();
+      }
+      async function safeJson(res) {
+        try {
+          return await res.json();
+        } catch {
+          return null;
+        }
+      }
+
+      function toast(msg, isError = false) {
+        const root = document.getElementById("toast-root");
+        const el = document.createElement("div");
+        el.className = "toast";
+        if (isError) el.style.background = "#7C2D4A";
+        el.innerText = msg;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), 2600);
+      }
+
+      function guestFullName(g) {
+        return [g.first_name, g.last_name_p, g.last_name_m]
+          .filter(Boolean)
+          .join(" ");
+      }
+      function groupById(id) {
+        return state.groups.find((g) => g.id === id) || null;
+      }
+      function tableByName(name) {
+        return state.tables.find((t) => t.name === name) || null;
+      }
+
+      /* ==================================================================
+   DATA LOADING
+   ================================================================== */
+      async function loadGroups() {
+        state.groups = await apiGet("/api/groups");
+      }
+      async function loadGuests() {
+        state.guests = await apiGet("/api/guests?sort_by=id");
+      }
+      async function loadTables() {
+        state.tables = await apiGet("/api/tables");
+      }
+      async function loadAll() {
+        await Promise.all([loadGroups(), loadGuests(), loadTables()]);
+      }
+
+      /* ==================================================================
+   ROUTER
+   ================================================================== */
+      function currentRoute() {
+        const hash = location.hash.replace(/^#/, "") || "/";
+        return hash;
+      }
+      async function renderRoute() {
+        state.route = currentRoute();
+        document.querySelectorAll(".sidebar-link").forEach((a) => {
+          a.classList.toggle("active", a.dataset.route === state.route);
+        });
+        const root = document.getElementById("view-root");
+        root.innerHTML = `<div class="py-24 text-center text-slate-400">Cargando…</div>`;
+        try {
+          await loadAll();
+        } catch (err) {
+          root.innerHTML = `<div class="py-24 text-center" style="color:var(--wine)">${err.message}</div>`;
+          return;
+        }
+        if (state.route === "/invitados") renderInvitadosView();
+        else if (state.route === "/grupos") renderGruposView();
+        else renderBoardView();
+      }
+      window.addEventListener("hashchange", renderRoute);
+      window.addEventListener("DOMContentLoaded", async () => {
+        if (!location.hash) location.hash = "#/";
+        await renderRoute();
+        await loadSavedArrangement();
+      });
+
+      /* ==================================================================
+   VIEW 1 — BOARD (Mesas & Optimizador)
+   ================================================================== */
+      function renderBoardView() {
+        const root = document.getElementById("view-root");
+        root.innerHTML = `
+    <header class="mb-6 flex justify-between items-start">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900">Seating Optimizer MVP</h1>
-        <p class="text-slate-500">Carga la plantilla Excel y ajusta las mesas manualmente</p>
+        <h1 class="font-display text-3xl">Mesas &amp; Optimizador</h1>
+        <p class="text-sm" style="color:var(--slate)">Corre el algoritmo y ajusta el resultado a mano.</p>
       </div>
-      <div id="scoreBadge" class="hidden bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg font-semibold">
-        Puntuación: <span id="scoreValue">0</span>
+      <div id="scoreBadge" class="${state.score === null ? "hidden" : ""} px-4 py-2 rounded-lg font-semibold text-sm" style="background:var(--gold-soft); color:var(--wine-dark);">
+        Puntuación: <span id="scoreValue">${state.score ?? 0}</span>
       </div>
     </header>
 
-    <!-- Upload Section -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8 flex items-center justify-between">
-      <input type="file" id="excelFile" accept=".xlsx, .xlsm" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-      <button onclick="uploadAndOptimize()" id="btnOptimize" class="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
-        Optimizar Mesas
-      </button>
-      <button onclick="saveArrangement()" id="btnSave" class="ml-2 hidden bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-6 rounded-lg transition whitespace-nowrap">
-        Guardar
-      </button>
+    <div class="card p-5 mb-6 flex flex-wrap items-center gap-3">
+      <label class="btn-secondary cursor-pointer">
+        Cargar Excel
+        <input type="file" id="excelFile" accept=".xlsx,.xlsm" class="hidden">
+      </label>
+      <button id="btnOptimize" class="btn-primary">Optimizar Mesas</button>
+      <button id="btnSave" class="btn-secondary ${Object.keys(currentBoardMap()).length ? "" : "hidden"}">Guardar Distribución</button>
+      <span id="boardStatus" class="text-sm" style="color:var(--slate)"></span>
     </div>
-    <p id="saveStatus" class="text-sm text-slate-500 -mt-6 mb-6 hidden"></p>
 
-    <!-- Status / Loading -->
     <div id="loading" class="hidden text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
-      <p class="mt-2 text-slate-600 font-medium">Ejecutando algoritmo de optimización...</p>
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4" style="border-color:var(--wine); border-top-color:transparent;"></div>
+      <p class="mt-2 font-medium" style="color:var(--slate)">Ejecutando algoritmo de optimización…</p>
     </div>
 
-    <!-- Board de Mesas -->
-    <div id="tablesBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-  </div>
+    <div id="tablesBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  `;
 
-  <script>
-    let draggedElement = null;
+        document
+          .getElementById("excelFile")
+          .addEventListener("change", handleBulkImport);
+        document
+          .getElementById("btnOptimize")
+          .addEventListener("click", runOptimize);
+        document
+          .getElementById("btnSave")
+          .addEventListener("click", saveArrangement);
 
-    async function uploadAndOptimize() {
-      const fileInput = document.getElementById('excelFile');
-      if (!fileInput.files[0]) {
-        alert('Por favor selecciona un archivo Excel');
-        return;
+        drawBoard();
       }
 
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-
-      document.getElementById('loading').classList.remove('hidden');
-      document.getElementById('tablesBoard').innerHTML = '';
-
-      try {
-        const res = await fetch('/optimize', { method: 'POST', body: formData });
-        const data = await res.json();
-
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('scoreBadge').classList.remove('hidden');
-        document.getElementById('scoreValue').innerText = data.score;
-
-        renderTables(data.tables);
-        document.getElementById('btnSave').classList.remove('hidden');
-      } catch (err) {
-        alert('Error procesando el archivo');
-        document.getElementById('loading').classList.add('hidden');
-      }
-    }
-
-    // Lee el estado actual del tablero (incluyendo ajustes manuales de drag & drop)
-    function getCurrentBoardState() {
-      const tables = {};
-      document.querySelectorAll('#tablesBoard > div').forEach(card => {
-        const tableName = card.querySelector('h3 span').innerText;
-        const guests = Array.from(card.querySelectorAll('.drop-zone > div')).map(el => el.innerText);
-        tables[tableName] = guests;
-      });
-      return tables;
-    }
-
-    async function saveArrangement() {
-      const statusEl = document.getElementById('saveStatus');
-      statusEl.classList.remove('hidden');
-      statusEl.innerText = 'Guardando...';
-
-      const tables = getCurrentBoardState();
-      const score = parseFloat(document.getElementById('scoreValue').innerText) || null;
-
-      try {
-        const res = await fetch('/save-arrangement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tables, score })
+      // Groups guests by table_id into { tableName: [guest, ...] }
+      function currentBoardMap() {
+        const map = {};
+        state.guests.forEach((g) => {
+          if (!g.table_id) return;
+          map[g.table_id] = map[g.table_id] || [];
+          map[g.table_id].push(g);
         });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Error al guardar');
-        }
-        statusEl.innerText = 'Guardado ✓';
-        setTimeout(() => statusEl.classList.add('hidden'), 2000);
-      } catch (err) {
-        statusEl.innerText = 'No se pudo guardar: ' + err.message;
+        return map;
       }
-    }
 
-    async function loadSavedArrangement() {
-      try {
-        const res = await fetch('/load-arrangement');
-        if (!res.ok) return; // Firestore no configurado aún, o error - no pasa nada
-        const data = await res.json();
-        if (data.tables) {
-          renderTables(data.tables);
-          document.getElementById('btnSave').classList.remove('hidden');
+      function drawBoard() {
+        const board = document.getElementById("tablesBoard");
+        if (!board) return;
+        const map = currentBoardMap();
+        const tableNames = state.tables.length
+          ? state.tables.map((t) => t.name)
+          : Object.keys(map);
+
+        if (!tableNames.length) {
+          board.innerHTML = `<div class="col-span-full text-center py-16" style="color:var(--slate)">
+      Aún no hay mesas. Carga un Excel o crea mesas desde la API para empezar.
+    </div>`;
+          return;
+        }
+
+        board.innerHTML = "";
+        tableNames.forEach((tableName) => {
+          const guests = map[tableName] || [];
+          const meta = tableByName(tableName);
+          const isPencil = state.boardPencil.has(tableName);
+          if (!state.boardSelected[tableName])
+            state.boardSelected[tableName] = new Set();
+
+          const card = document.createElement("div");
+          card.className = "card p-4 flex flex-col";
+          card.dataset.table = tableName;
+
+          card.innerHTML = `
+      <div class="flex justify-between items-center mb-3 pb-2 border-b" style="border-color:var(--line)">
+        <span class="font-semibold">${tableName}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2 py-1 rounded count" style="background:var(--wine-soft); color:var(--wine-dark);">
+            ${guests.length}${meta ? "/" + meta.capacity : ""} invitados
+          </span>
+          <button class="pencil-btn text-sm ${isPencil ? "opacity-100" : "opacity-40"} hover:opacity-100" title="Selección múltiple">✏️</button>
+        </div>
+      </div>
+      <div class="drop-zone flex-1 min-h-[100px] flex flex-col gap-2"></div>
+    `;
+
+          card.querySelector(".pencil-btn").addEventListener("click", () => {
+            if (state.boardPencil.has(tableName)) {
+              state.boardPencil.delete(tableName);
+              state.boardSelected[tableName].clear();
+            } else {
+              state.boardPencil.add(tableName);
+            }
+            drawBoard();
+          });
+
+          const zone = card.querySelector(".drop-zone");
+          zone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            zone.classList.add("drag-over");
+          });
+          zone.addEventListener("dragleave", () =>
+            zone.classList.remove("drag-over"),
+          );
+          zone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            zone.classList.remove("drag-over");
+            handleDrop(tableName, e.dataTransfer);
+          });
+
+          guests.forEach((g) => {
+            const group = groupById(g.group_id);
+            const isChecked = state.boardSelected[tableName].has(g.id);
+
+            const chip = document.createElement("div");
+            chip.className = `guest-chip ${isChecked ? "checked" : ""}`;
+            chip.draggable = true;
+            chip.dataset.guestId = g.id;
+
+            chip.innerHTML = `
+        ${isPencil ? `<input type="checkbox" class="chip-check" ${isChecked ? "checked" : ""}>` : ""}
+        ${group ? `<span class="group-dot" style="background:${group.color || "#B08D57"}" title="${group.name}"></span>` : ""}
+        <span class="flex-1 truncate">${guestFullName(g)}</span>
+      `;
+
+            if (isPencil) {
+              chip
+                .querySelector(".chip-check")
+                .addEventListener("change", (e) => {
+                  if (e.target.checked)
+                    state.boardSelected[tableName].add(g.id);
+                  else state.boardSelected[tableName].delete(g.id);
+                  chip.classList.toggle("checked", e.target.checked);
+                });
+            }
+
+            chip.addEventListener("dragstart", (e) => {
+              const selected = state.boardSelected[tableName];
+              const ids =
+                selected.size > 0 && selected.has(g.id)
+                  ? Array.from(selected)
+                  : [g.id];
+              e.dataTransfer.setData(
+                "application/json",
+                JSON.stringify({ from: tableName, ids }),
+              );
+            });
+
+            zone.appendChild(chip);
+          });
+
+          board.appendChild(card);
+        });
+      }
+
+      function handleDrop(targetTable, dataTransfer) {
+        let payload;
+        try {
+          payload = JSON.parse(dataTransfer.getData("application/json"));
+        } catch {
+          return;
+        }
+        if (!payload || !payload.ids || !payload.ids.length) return;
+
+        payload.ids.forEach((id) => {
+          const guest = state.guests.find((g) => g.id === id);
+          if (guest) guest.table_id = targetTable;
+        });
+
+        if (payload.from && state.boardSelected[payload.from]) {
+          state.boardSelected[payload.from].clear();
+        }
+
+        drawBoard();
+      }
+
+      async function handleBulkImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        document.getElementById("boardStatus").innerText = "Importando…";
+        try {
+          const res = await fetch("/api/guests/bulk-import", {
+            method: "POST",
+            body: formData,
+          });
+          if (!res.ok)
+            throw new Error(
+              (await safeJson(res))?.detail || "Error al importar",
+            );
+          const data = await res.json();
+          toast(
+            `Importado: ${data.guests_created} invitados, ${data.groups_created} grupos, ${data.tables_created} mesas`,
+          );
+          await loadAll();
+          drawBoard();
+          document.getElementById("boardStatus").innerText =
+            'Listo. Corre "Optimizar Mesas" para asignar.';
+        } catch (err) {
+          toast(err.message, true);
+          document.getElementById("boardStatus").innerText = "";
+        }
+      }
+
+      async function runOptimize() {
+        document.getElementById("loading").classList.remove("hidden");
+        document.getElementById("tablesBoard").innerHTML = "";
+        try {
+          const res = await fetch("/optimize", { method: "POST" });
+          if (!res.ok)
+            throw new Error(
+              (await safeJson(res))?.detail || "Error al optimizar",
+            );
+          const data = await res.json();
+          state.score = data.score;
+          if (data.guests) state.guests = data.guests;
+          else await loadGuests();
+
+          document.getElementById("loading").classList.add("hidden");
+          const badge = document.getElementById("scoreBadge");
+          badge.classList.remove("hidden");
+          document.getElementById("scoreValue").innerText = data.score;
+          document.getElementById("btnSave").classList.remove("hidden");
+          drawBoard();
+        } catch (err) {
+          document.getElementById("loading").classList.add("hidden");
+          toast(err.message, true);
+        }
+      }
+
+      async function saveArrangement() {
+        const statusEl = document.getElementById("boardStatus");
+        statusEl.innerText = "Guardando…";
+        const map = currentBoardMap();
+        const tables = {};
+        Object.entries(map).forEach(([name, guests]) => {
+          tables[name] = guests.map(guestFullName);
+        });
+        try {
+          await apiSend("/save-arrangement", "POST", {
+            tables,
+            score: state.score,
+          });
+          statusEl.innerText = "Guardado ✓";
+          setTimeout(() => {
+            if (statusEl) statusEl.innerText = "";
+          }, 2000);
+        } catch (err) {
+          statusEl.innerText = "No se pudo guardar: " + err.message;
+        }
+      }
+
+      async function loadSavedArrangement() {
+        try {
+          const data = await apiGet("/load-arrangement");
           if (data.score !== null && data.score !== undefined) {
-            document.getElementById('scoreBadge').classList.remove('hidden');
-            document.getElementById('scoreValue').innerText = data.score;
+            state.score = data.score;
+            if (state.route === "/") drawBoard();
           }
+        } catch {
+          /* silencioso: Firestore puede no tener nada guardado aún */
         }
-      } catch (err) {
-        // Silencioso: si no hay nada guardado o el backend no tiene Firebase, no interrumpimos al usuario
       }
-    }
 
-    // Al abrir la página, intenta restaurar la última distribución guardada
-    window.addEventListener('DOMContentLoaded', loadSavedArrangement);
+      /* ==================================================================
+   VIEW 2 — ADMINISTRAR INVITADOS
+   ================================================================== */
+      const INV_COLUMNS = [
+        { key: "id", label: "ID" },
+        { key: "first_name", label: "Nombre(s)" },
+        { key: "last_name_p", label: "Apellido P." },
+        { key: "last_name_m", label: "Apellido M." },
+        { key: "group", label: "Grupo" },
+        { key: "table", label: "Mesa" },
+      ];
 
-    function renderTables(tables) {
-      const board = document.getElementById('tablesBoard');
-      board.innerHTML = '';
+      function sortedGuests() {
+        const { column, dir } = state.invSort;
+        const mult = dir === "desc" ? -1 : 1;
+        const val = (g) => {
+          if (column === "group") return groupById(g.group_id)?.name || "";
+          if (column === "table") return g.table_id || "";
+          return g[column] || "";
+        };
+        return [...state.guests].sort((a, b) => {
+          const va = String(val(a)).toLowerCase();
+          const vb = String(val(b)).toLowerCase();
+          if (!va && vb) return 1;
+          if (va && !vb) return -1;
+          return va.localeCompare(vb, "es") * mult;
+        });
+      }
 
-      Object.entries(tables).forEach(([tableName, guests]) => {
-        const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col';
-        
-        card.innerHTML = `
-          <h3 class="font-bold text-slate-700 mb-3 pb-2 border-b border-slate-100 flex justify-between">
-            <span>${tableName}</span>
-            <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 count">${guests.length} invitados</span>
-          </h3>
-          <div class="drop-zone flex-1 min-h-[120px] space-y-2 p-1 rounded-lg transition" 
-               ondragover="allowDrop(event)" ondrop="drop(event)" ondragleave="clearHighlight(event)">
-          </div>
-        `;
+      function cycleSort(column) {
+        const cur = state.invSort;
+        if (cur.column !== column) {
+          state.invSort = { column, dir: "asc" };
+        } else if (cur.dir === "asc") {
+          state.invSort = { column, dir: "desc" };
+        } else {
+          state.invSort = { column: "id", dir: "asc" };
+        }
+        renderInvitadosTable();
+      }
 
-        const zone = card.querySelector('.drop-zone');
-        guests.forEach(guest => {
-          const item = document.createElement('div');
-          item.className = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 p-2.5 rounded-lg text-sm font-medium cursor-grab active:cursor-grabbing border border-indigo-100 shadow-sm transition';
-          item.innerText = guest;
-          item.draggable = true;
-          item.ondragstart = (e) => drag(e);
-          zone.appendChild(item);
+      function renderInvitadosView() {
+        const root = document.getElementById("view-root");
+        root.innerHTML = `
+    <header class="mb-6 flex justify-between items-start">
+      <div>
+        <h1 class="font-display text-3xl">Administrar Invitados</h1>
+        <p class="text-sm" style="color:var(--slate)">${state.guests.length} invitados en total</p>
+      </div>
+      <button id="btnAddGuest" class="btn-primary">+ Añadir Invitado</button>
+    </header>
+
+    <div id="bulkToolbar" class="hidden card p-4 mb-4 flex flex-wrap items-center gap-3" style="border-color:var(--gold)">
+      <span class="text-sm font-medium" id="bulkCount"></span>
+      <select id="bulkGroupSelect" class="border rounded-lg px-2 py-1.5 text-sm" style="border-color:var(--line)">
+        <option value="">Asignar a grupo…</option>
+        ${state.groups.map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
+        <option value="__none__">Quitar de grupo</option>
+      </select>
+      <button id="bulkApplyGroup" class="btn-secondary text-sm">Aplicar grupo</button>
+      <select id="bulkTableSelect" class="border rounded-lg px-2 py-1.5 text-sm" style="border-color:var(--line)">
+        <option value="">Asignar a mesa…</option>
+        ${state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`).join("")}
+        <option value="__none__">Quitar de mesa</option>
+      </select>
+      <button id="bulkApplyTable" class="btn-secondary text-sm">Aplicar mesa</button>
+      <button id="bulkDelete" class="btn-ghost text-sm ml-auto" style="color:var(--wine)">Eliminar seleccionados</button>
+      <button id="bulkClear" class="btn-ghost text-sm">Cancelar</button>
+    </div>
+
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead style="background:var(--paper); border-bottom:1px solid var(--line)">
+          <tr>
+            <th class="p-3 w-10"><input type="checkbox" id="selectAll"></th>
+            ${INV_COLUMNS.map(
+              (c) => `
+              <th class="p-3 text-left th-sortable" data-col="${c.key}">
+                ${c.label} <span class="sort-indicator" style="color:var(--gold)"></span>
+              </th>`,
+            ).join("")}
+            <th class="p-3 w-10"></th>
+          </tr>
+        </thead>
+        <tbody id="guestsTbody"></tbody>
+      </table>
+    </div>
+  `;
+
+        document
+          .getElementById("btnAddGuest")
+          .addEventListener("click", openAddGuestModal);
+        document.getElementById("selectAll").addEventListener("change", (e) => {
+          if (e.target.checked)
+            sortedGuests().forEach((g) => state.invSelected.add(g.id));
+          else state.invSelected.clear();
+          renderInvitadosTable();
+        });
+        root.querySelectorAll(".th-sortable").forEach((th) => {
+          th.addEventListener("click", () => cycleSort(th.dataset.col));
+        });
+        document
+          .getElementById("bulkApplyGroup")
+          .addEventListener("click", () => bulkApply("group"));
+        document
+          .getElementById("bulkApplyTable")
+          .addEventListener("click", () => bulkApply("table"));
+        document
+          .getElementById("bulkDelete")
+          .addEventListener("click", bulkDeleteSelected);
+        document.getElementById("bulkClear").addEventListener("click", () => {
+          state.invSelected.clear();
+          renderInvitadosTable();
         });
 
-        board.appendChild(card);
-      });
-    }
-
-    // Drag and Drop Logic
-    function drag(e) {
-      draggedElement = e.target;
-      e.dataTransfer.setData("text/plain", e.target.innerText);
-    }
-
-    function allowDrop(e) {
-      e.preventDefault();
-      e.currentTarget.classList.add('bg-indigo-50/50', 'border-2', 'border-dashed', 'border-indigo-300');
-    }
-
-    function clearHighlight(e) {
-      e.currentTarget.classList.remove('bg-indigo-50/50', 'border-2', 'border-dashed', 'border-indigo-300');
-    }
-
-    function drop(e) {
-      e.preventDefault();
-      clearHighlight(e);
-      const zone = e.currentTarget;
-      if (draggedElement) {
-        zone.appendChild(draggedElement);
-        updateCounts();
+        renderInvitadosTable();
       }
-    }
 
-    function updateCounts() {
-      document.querySelectorAll('.bg-white').forEach(card => {
-        const count = card.querySelectorAll('.drop-zone > div').length;
-        const countEl = card.querySelector('.count');
-        if (countEl) countEl.innerText = `${count} invitados`;
-      });
-    }
-  </script>
-</body>
+      function renderInvitadosTable() {
+        const tbody = document.getElementById("guestsTbody");
+        if (!tbody) return;
+        const rows = sortedGuests();
+
+        // sort indicators
+        document.querySelectorAll(".th-sortable").forEach((th) => {
+          const ind = th.querySelector(".sort-indicator");
+          if (th.dataset.col === state.invSort.column) {
+            ind.innerText = state.invSort.dir === "asc" ? "▲" : "▼";
+          } else {
+            ind.innerText = "";
+          }
+        });
+
+        tbody.innerHTML = "";
+        rows.forEach((g) => {
+          const group = groupById(g.group_id);
+          const tr = document.createElement("tr");
+          tr.className = "border-b hover:bg-black/[0.02]";
+          tr.style.borderColor = "var(--line)";
+          tr.innerHTML = `
+      <td class="p-3"><input type="checkbox" class="row-check" ${state.invSelected.has(g.id) ? "checked" : ""}></td>
+      <td class="p-3 text-xs" style="color:var(--slate)">${g.id.slice(0, 6)}</td>
+      <td class="p-3">${g.first_name || ""}</td>
+      <td class="p-3">${g.last_name_p || ""}</td>
+      <td class="p-3">${g.last_name_m || ""}</td>
+      <td class="p-3">${group ? `<span class="inline-flex items-center gap-1.5"><span class="group-dot" style="background:${group.color || "#B08D57"}"></span>${group.name}</span>` : '<span style="color:var(--slate)">—</span>'}</td>
+      <td class="p-3">${g.table_id || '<span style="color:var(--slate)">—</span>'}</td>
+      <td class="p-3 text-right"><button class="del-guest btn-ghost text-xs" style="color:var(--wine)">Eliminar</button></td>
+    `;
+          tr.querySelector(".row-check").addEventListener("change", (e) => {
+            if (e.target.checked) state.invSelected.add(g.id);
+            else state.invSelected.delete(g.id);
+            updateBulkToolbar();
+          });
+          tr.querySelector(".del-guest").addEventListener("click", async () => {
+            if (!confirm(`¿Eliminar a ${guestFullName(g)}?`)) return;
+            await apiDelete(`/api/guests/${g.id}`);
+            state.guests = state.guests.filter((x) => x.id !== g.id);
+            state.invSelected.delete(g.id);
+            renderInvitadosTable();
+            updateBulkToolbar();
+          });
+          tbody.appendChild(tr);
+        });
+        updateBulkToolbar();
+      }
+
+      function updateBulkToolbar() {
+        const bar = document.getElementById("bulkToolbar");
+        if (!bar) return;
+        const n = state.invSelected.size;
+        bar.classList.toggle("hidden", n === 0);
+        const countEl = document.getElementById("bulkCount");
+        if (countEl)
+          countEl.innerText = `${n} seleccionado${n === 1 ? "" : "s"}`;
+      }
+
+      async function bulkApply(kind) {
+        const ids = Array.from(state.invSelected);
+        if (!ids.length) return;
+        const selectEl = document.getElementById(
+          kind === "group" ? "bulkGroupSelect" : "bulkTableSelect",
+        );
+        const val = selectEl.value;
+        if (!val) return;
+        const field = kind === "group" ? "group_id" : "table_id";
+        const value = val === "__none__" ? null : val;
+        try {
+          await Promise.all(
+            ids.map((id) =>
+              apiSend(`/api/guests/${id}`, "PUT", { [field]: value }),
+            ),
+          );
+          ids.forEach((id) => {
+            const g = state.guests.find((x) => x.id === id);
+            if (g) g[field] = value;
+          });
+          toast("Actualizado");
+          renderInvitadosTable();
+        } catch (err) {
+          toast(err.message, true);
+        }
+      }
+
+      async function bulkDeleteSelected() {
+        const ids = Array.from(state.invSelected);
+        if (!ids.length) return;
+        if (!confirm(`¿Eliminar ${ids.length} invitado(s)?`)) return;
+        try {
+          await Promise.all(ids.map((id) => apiDelete(`/api/guests/${id}`)));
+          state.guests = state.guests.filter((g) => !ids.includes(g.id));
+          state.invSelected.clear();
+          renderInvitadosTable();
+          toast("Invitados eliminados");
+        } catch (err) {
+          toast(err.message, true);
+        }
+      }
+
+      function openAddGuestModal() {
+        const backdrop = document.createElement("div");
+        backdrop.className =
+          "fixed inset-0 modal-backdrop flex items-center justify-center z-50";
+        backdrop.innerHTML = `
+    <div class="card p-6 w-full max-w-md">
+      <h2 class="font-display text-xl mb-4">Añadir Invitado</h2>
+      <div class="space-y-3">
+        <input id="f_first" placeholder="Nombre(s)" class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
+        <input id="f_lp" placeholder="Apellido Paterno" class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
+        <input id="f_lm" placeholder="Apellido Materno" class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
+        <select id="f_group" class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
+          <option value="">Sin grupo</option>
+          ${state.groups.map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
+        </select>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="cancelAdd" class="btn-ghost text-sm">Cancelar</button>
+        <button id="confirmAdd" class="btn-primary text-sm">Guardar</button>
+      </div>
+    </div>
+  `;
+        document.body.appendChild(backdrop);
+        backdrop.addEventListener("click", (e) => {
+          if (e.target === backdrop) backdrop.remove();
+        });
+        backdrop
+          .querySelector("#cancelAdd")
+          .addEventListener("click", () => backdrop.remove());
+        backdrop
+          .querySelector("#confirmAdd")
+          .addEventListener("click", async () => {
+            const first_name = backdrop.querySelector("#f_first").value.trim();
+            if (!first_name) {
+              toast("El nombre es obligatorio", true);
+              return;
+            }
+            const payload = {
+              first_name,
+              last_name_p: backdrop.querySelector("#f_lp").value.trim() || null,
+              last_name_m: backdrop.querySelector("#f_lm").value.trim() || null,
+              group_id: backdrop.querySelector("#f_group").value || null,
+            };
+            try {
+              const created = await apiSend("/api/guests", "POST", payload);
+              state.guests.push(created);
+              backdrop.remove();
+              renderInvitadosTable();
+              toast("Invitado añadido");
+            } catch (err) {
+              toast(err.message, true);
+            }
+          });
+      }
+
+      /* ==================================================================
+   VIEW 3 — GRUPOS
+   ================================================================== */
+      const GROUP_COLORS = [
+        "#7C2D4A",
+        "#B08D57",
+        "#3B6E71",
+        "#8A6FBF",
+        "#C25E4D",
+        "#4C6B8A",
+      ];
+
+      function renderGruposView() {
+        const root = document.getElementById("view-root");
+        root.innerHTML = `
+    <header class="mb-6 flex justify-between items-start">
+      <div>
+        <h1 class="font-display text-3xl">Grupos</h1>
+        <p class="text-sm" style="color:var(--slate)">Agrupa invitados para mantenerlos juntos en la misma mesa</p>
+      </div>
+      <button id="btnAddGroup" class="btn-primary">+ Crear Grupo</button>
+    </header>
+    <div id="groupsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  `;
+        document
+          .getElementById("btnAddGroup")
+          .addEventListener("click", () => openGroupModal(null));
+        drawGroupsGrid();
+      }
+
+      function drawGroupsGrid() {
+        const grid = document.getElementById("groupsGrid");
+        if (!grid) return;
+        grid.innerHTML = "";
+
+        if (!state.groups.length) {
+          grid.innerHTML = `<div class="col-span-full text-center py-16" style="color:var(--slate)">
+      Aún no hay grupos. Crea uno para empezar a organizar a tus invitados.
+    </div>`;
+          return;
+        }
+
+        state.groups.forEach((group) => {
+          const members = state.guests.filter((g) => g.group_id === group.id);
+          const unassigned = state.guests.filter((g) => !g.group_id);
+
+          const card = document.createElement("div");
+          card.className = "card p-5 flex flex-col";
+          card.innerHTML = `
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <span class="group-dot" style="width:0.9rem;height:0.9rem;background:${group.color || "#B08D57"}"></span>
+          <h3 class="font-semibold">${group.name}</h3>
+        </div>
+        <span class="text-xs px-2 py-1 rounded" style="background:var(--paper); color:var(--slate)">${members.length}</span>
+      </div>
+      <div class="flex gap-3 text-xs mb-3" style="color:var(--slate)">
+        <button class="edit-group hover:underline">Editar</button>
+        <button class="del-group hover:underline" style="color:var(--wine)">Eliminar</button>
+      </div>
+      <div class="member-list flex-1 space-y-1.5 mb-3"></div>
+      <select class="add-member-select w-full border rounded-lg px-2 py-1.5 text-xs" style="border-color:var(--line)">
+        <option value="">+ Añadir integrante…</option>
+        ${unassigned.map((g) => `<option value="${g.id}">${guestFullName(g)}</option>`).join("")}
+      </select>
+    `;
+
+          const list = card.querySelector(".member-list");
+          if (!members.length) {
+            list.innerHTML = `<p class="text-xs" style="color:var(--slate)">Sin integrantes todavía</p>`;
+          } else {
+            members.forEach((m) => {
+              const row = document.createElement("div");
+              row.className =
+                "flex items-center justify-between text-sm rounded-lg px-2 py-1.5";
+              row.style.background = "var(--paper)";
+              row.innerHTML = `<span class="truncate">${guestFullName(m)}</span>
+          <button class="remove-member text-xs" style="color:var(--wine)">✕</button>`;
+              row
+                .querySelector(".remove-member")
+                .addEventListener("click", async () => {
+                  try {
+                    await apiSend(`/api/guests/${m.id}`, "PUT", {
+                      group_id: null,
+                    });
+                    m.group_id = null;
+                    drawGroupsGrid();
+                  } catch (err) {
+                    toast(err.message, true);
+                  }
+                });
+              list.appendChild(row);
+            });
+          }
+
+          card
+            .querySelector(".add-member-select")
+            .addEventListener("change", async (e) => {
+              const guestId = e.target.value;
+              if (!guestId) return;
+              try {
+                await apiSend(`/api/guests/${guestId}`, "PUT", {
+                  group_id: group.id,
+                });
+                const g = state.guests.find((x) => x.id === guestId);
+                if (g) g.group_id = group.id;
+                drawGroupsGrid();
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+
+          card
+            .querySelector(".edit-group")
+            .addEventListener("click", () => openGroupModal(group));
+          card
+            .querySelector(".del-group")
+            .addEventListener("click", async () => {
+              if (
+                !confirm(
+                  `¿Eliminar el grupo "${group.name}"? Los integrantes quedarán sin grupo.`,
+                )
+              )
+                return;
+              try {
+                await apiDelete(`/api/groups/${group.id}`);
+                state.groups = state.groups.filter((g) => g.id !== group.id);
+                state.guests.forEach((g) => {
+                  if (g.group_id === group.id) g.group_id = null;
+                });
+                drawGroupsGrid();
+                toast("Grupo eliminado");
+              } catch (err) {
+                toast(err.message, true);
+              }
+            });
+
+          grid.appendChild(card);
+        });
+      }
+
+      function openGroupModal(existingGroup) {
+        const isEdit = !!existingGroup;
+        const backdrop = document.createElement("div");
+        backdrop.className =
+          "fixed inset-0 modal-backdrop flex items-center justify-center z-50";
+        backdrop.innerHTML = `
+    <div class="card p-6 w-full max-w-sm">
+      <h2 class="font-display text-xl mb-4">${isEdit ? "Editar Grupo" : "Crear Grupo"}</h2>
+      <div class="space-y-3">
+        <input id="g_name" placeholder="Nombre del grupo" value="${isEdit ? existingGroup.name : ""}"
+          class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
+        <div>
+          <p class="text-xs mb-1.5" style="color:var(--slate)">Color</p>
+          <div class="flex gap-2" id="colorSwatches">
+            ${GROUP_COLORS.map((c) => `<button type="button" class="swatch w-7 h-7 rounded-full" data-color="${c}" style="background:${c}; outline:${isEdit && existingGroup.color === c ? "2px solid var(--ink)" : "none"}; outline-offset:2px;"></button>`).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="cancelGroup" class="btn-ghost text-sm">Cancelar</button>
+        <button id="confirmGroup" class="btn-primary text-sm">Guardar</button>
+      </div>
+    </div>
+  `;
+        document.body.appendChild(backdrop);
+        let chosenColor = isEdit
+          ? existingGroup.color || GROUP_COLORS[0]
+          : GROUP_COLORS[0];
+
+        backdrop.querySelectorAll(".swatch").forEach((sw) => {
+          sw.addEventListener("click", () => {
+            chosenColor = sw.dataset.color;
+            backdrop
+              .querySelectorAll(".swatch")
+              .forEach((s) => (s.style.outline = "none"));
+            sw.style.outline = "2px solid var(--ink)";
+            sw.style.outlineOffset = "2px";
+          });
+        });
+
+        backdrop.addEventListener("click", (e) => {
+          if (e.target === backdrop) backdrop.remove();
+        });
+        backdrop
+          .querySelector("#cancelGroup")
+          .addEventListener("click", () => backdrop.remove());
+        backdrop
+          .querySelector("#confirmGroup")
+          .addEventListener("click", async () => {
+            const name = backdrop.querySelector("#g_name").value.trim();
+            if (!name) {
+              toast("El nombre es obligatorio", true);
+              return;
+            }
+            try {
+              if (isEdit) {
+                await apiSend(`/api/groups/${existingGroup.id}`, "PUT", {
+                  name,
+                  color: chosenColor,
+                });
+                existingGroup.name = name;
+                existingGroup.color = chosenColor;
+              } else {
+                const created = await apiSend("/api/groups", "POST", {
+                  name,
+                  color: chosenColor,
+                });
+                state.groups.push(created);
+              }
+              backdrop.remove();
+              drawGroupsGrid();
+              toast(isEdit ? "Grupo actualizado" : "Grupo creado");
+            } catch (err) {
+              toast(err.message, true);
+            }
+          });
+      }
+    </script>
+  </body>
 </html>
