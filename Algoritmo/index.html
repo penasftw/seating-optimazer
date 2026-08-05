@@ -39,6 +39,15 @@
         background: #d9d0c8;
         border-radius: 4px;
       }
+      
+      /* Hide scrollbar for horizontal mobile nav */
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
 
       .sidebar-link {
         display: flex;
@@ -51,6 +60,7 @@
         font-weight: 500;
         border-left: 2px solid transparent;
         transition: all 0.15s ease;
+        white-space: nowrap;
       }
       .sidebar-link:hover {
         background: rgba(255, 255, 255, 0.05);
@@ -172,34 +182,36 @@
     </style>
   </head>
   <body>
-    <div class="flex min-h-screen">
+    <div class="flex flex-col md:flex-row min-h-screen">
       <!-- ============ SIDEBAR ============ -->
       <aside
-        class="w-60 shrink-0 flex flex-col py-6 px-3"
+        class="w-full md:w-60 shrink-0 flex flex-col py-4 md:py-6 px-3 transition-all"
         style="background: var(--ink)"
       >
-        <div class="px-3 mb-8">
-          <p class="font-display text-xl text-white leading-tight">Mesas</p>
-          <p class="text-xs" style="color: #9a8fa0">Seating Optimizer</p>
+        <div class="px-3 mb-4 md:mb-8 flex justify-between items-center md:block">
+          <div>
+            <p class="font-display text-xl text-white leading-tight">Mesas</p>
+            <p class="text-xs" style="color: #9a8fa0">Seating Optimizer</p>
+          </div>
         </div>
-        <nav class="flex flex-col gap-1">
+        <nav class="flex flex-row md:flex-col gap-2 md:gap-1 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
           <a href="#/" class="sidebar-link" data-route="/"
-            ><span>📊</span><span>Mesas &amp; Optimizador</span></a
+            ><span>📊</span><span class="hidden md:inline">Mesas &amp; Optimizador</span><span class="md:hidden">Tablero</span></a
           >
           <a href="#/invitados" class="sidebar-link" data-route="/invitados"
-            ><span>👥</span><span>Administrar Invitados</span></a
+            ><span>👥</span><span class="hidden md:inline">Administrar Invitados</span><span class="md:hidden">Invitados</span></a
           >
           <a href="#/grupos" class="sidebar-link" data-route="/grupos"
             ><span>🏷️</span><span>Grupos</span></a
           >
         </nav>
-        <div class="mt-auto px-3 pt-6 text-xs" style="color: #75697d">
+        <div class="hidden md:block mt-auto px-3 pt-6 text-xs" style="color: #75697d">
           Firestore conectado en el backend
         </div>
       </aside>
 
       <!-- ============ MAIN ============ -->
-      <main class="flex-1 min-w-0 p-8">
+      <main class="flex-1 min-w-0 p-4 md:p-8 overflow-hidden">
         <div id="view-root" class="max-w-6xl mx-auto"></div>
       </main>
     </div>
@@ -337,7 +349,7 @@
       function renderBoardView() {
         const root = document.getElementById("view-root");
         root.innerHTML = `
-    <header class="mb-6 flex justify-between items-start">
+    <header class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="font-display text-3xl">Mesas &amp; Optimizador</h1>
         <p class="text-sm" style="color:var(--slate)">Corre el algoritmo y ajusta el resultado a mano.</p>
@@ -354,7 +366,7 @@
       </label>
       <button id="btnOptimize" class="btn-primary">Optimizar Mesas</button>
       <button id="btnSave" class="btn-secondary ${Object.keys(currentBoardMap()).length ? "" : "hidden"}">Guardar Distribución</button>
-      <span id="boardStatus" class="text-sm" style="color:var(--slate)"></span>
+      <span id="boardStatus" class="text-sm w-full md:w-auto" style="color:var(--slate)"></span>
     </div>
 
     <div id="loading" class="hidden text-center py-12">
@@ -378,7 +390,6 @@
         drawBoard();
       }
 
-      // Groups guests by table_id into { tableName: [guest, ...] }
       function currentBoardMap() {
         const map = {};
         state.guests.forEach((g) => {
@@ -584,9 +595,6 @@
 
         const dirtyIds = Array.from(state.boardDirty);
         try {
-          // Persistir table_id en cada invitado movido: el tablero se
-          // reconstruye desde los invitados, así que esto es lo que
-          // realmente hace que la distribución sobreviva a un refresh.
           if (dirtyIds.length) {
             await Promise.all(
               dirtyIds.map((id) => {
@@ -600,8 +608,6 @@
             state.boardDirty.clear();
           }
 
-          // Además guardamos un snapshot legible en arrangements/current
-          // (nombres por mesa + score), por si se quiere consultar aparte.
           const map = currentBoardMap();
           const tables = {};
           Object.entries(map).forEach(([name, guests]) => {
@@ -677,34 +683,36 @@
       function renderInvitadosView() {
         const root = document.getElementById("view-root");
         root.innerHTML = `
-    <header class="mb-6 flex justify-between items-start">
+    <header class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="font-display text-3xl">Administrar Invitados</h1>
         <p class="text-sm" style="color:var(--slate)">${state.guests.length} invitados en total</p>
       </div>
-      <button id="btnAddGuest" class="btn-primary">+ Añadir Invitado</button>
+      <button id="btnAddGuest" class="btn-primary w-full sm:w-auto">+ Añadir Invitado</button>
     </header>
 
     <div id="bulkToolbar" class="hidden card p-4 mb-4 flex flex-wrap items-center gap-3" style="border-color:var(--gold)">
-      <span class="text-sm font-medium" id="bulkCount"></span>
-      <select id="bulkGroupSelect" class="border rounded-lg px-2 py-1.5 text-sm" style="border-color:var(--line)">
+      <span class="text-sm font-medium w-full md:w-auto" id="bulkCount"></span>
+      <select id="bulkGroupSelect" class="border rounded-lg px-2 py-1.5 text-sm flex-1 min-w-[140px]" style="border-color:var(--line)">
         <option value="">Asignar a grupo…</option>
         ${state.groups.map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
         <option value="__none__">Quitar de grupo</option>
       </select>
-      <button id="bulkApplyGroup" class="btn-secondary text-sm">Aplicar grupo</button>
-      <select id="bulkTableSelect" class="border rounded-lg px-2 py-1.5 text-sm" style="border-color:var(--line)">
+      <button id="bulkApplyGroup" class="btn-secondary text-sm">Aplicar</button>
+      
+      <select id="bulkTableSelect" class="border rounded-lg px-2 py-1.5 text-sm flex-1 min-w-[140px]" style="border-color:var(--line)">
         <option value="">Asignar a mesa…</option>
         ${state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`).join("")}
         <option value="__none__">Quitar de mesa</option>
       </select>
-      <button id="bulkApplyTable" class="btn-secondary text-sm">Aplicar mesa</button>
-      <button id="bulkDelete" class="btn-ghost text-sm ml-auto" style="color:var(--wine)">Eliminar seleccionados</button>
-      <button id="bulkClear" class="btn-ghost text-sm">Cancelar</button>
+      <button id="bulkApplyTable" class="btn-secondary text-sm">Aplicar</button>
+      
+      <button id="bulkDelete" class="btn-ghost text-sm md:ml-auto w-full md:w-auto mt-2 md:mt-0" style="color:var(--wine)">Eliminar seleccionados</button>
+      <button id="bulkClear" class="btn-ghost text-sm w-full md:w-auto">Cancelar</button>
     </div>
 
-    <div class="card overflow-hidden">
-      <table class="w-full text-sm">
+    <div class="card overflow-x-auto w-full">
+      <table class="w-full text-sm min-w-[650px]">
         <thead style="background:var(--paper); border-bottom:1px solid var(--line)">
           <tr>
             <th class="p-3 w-10"><input type="checkbox" id="selectAll"></th>
@@ -756,7 +764,6 @@
         if (!tbody) return;
         const rows = sortedGuests();
 
-        // sort indicators
         document.querySelectorAll(".th-sortable").forEach((th) => {
           const ind = th.querySelector(".sort-indicator");
           if (th.dataset.col === state.invSort.column) {
@@ -855,9 +862,9 @@
       function openAddGuestModal() {
         const backdrop = document.createElement("div");
         backdrop.className =
-          "fixed inset-0 modal-backdrop flex items-center justify-center z-50";
+          "fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4";
         backdrop.innerHTML = `
-    <div class="card p-6 w-full max-w-md">
+    <div class="card p-6 w-full max-w-md mx-auto">
       <h2 class="font-display text-xl mb-4">Añadir Invitado</h2>
       <div class="space-y-3">
         <input id="f_first" placeholder="Nombre(s)" class="w-full border rounded-lg px-3 py-2 text-sm" style="border-color:var(--line)">
@@ -922,12 +929,12 @@
       function renderGruposView() {
         const root = document.getElementById("view-root");
         root.innerHTML = `
-    <header class="mb-6 flex justify-between items-start">
+    <header class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="font-display text-3xl">Grupos</h1>
         <p class="text-sm" style="color:var(--slate)">Agrupa invitados para mantenerlos juntos en la misma mesa</p>
       </div>
-      <button id="btnAddGroup" class="btn-primary">+ Crear Grupo</button>
+      <button id="btnAddGroup" class="btn-primary w-full sm:w-auto">+ Crear Grupo</button>
     </header>
     <div id="groupsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
   `;
@@ -1052,9 +1059,9 @@
         const isEdit = !!existingGroup;
         const backdrop = document.createElement("div");
         backdrop.className =
-          "fixed inset-0 modal-backdrop flex items-center justify-center z-50";
+          "fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4";
         backdrop.innerHTML = `
-    <div class="card p-6 w-full max-w-sm">
+    <div class="card p-6 w-full max-w-sm mx-auto">
       <h2 class="font-display text-xl mb-4">${isEdit ? "Editar Grupo" : "Crear Grupo"}</h2>
       <div class="space-y-3">
         <input id="g_name" placeholder="Nombre del grupo" value="${isEdit ? existingGroup.name : ""}"
