@@ -10,6 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    
+    <!-- Mobile Drag & Drop Polyfill -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+
     <style>
       :root {
         --ink: #241c29;
@@ -219,6 +224,17 @@
     <div id="toast-root"></div>
 
     <script>
+      /* ==================================================================
+   MOBILE DRAG & DROP POLYFILL INIT
+   ================================================================== */
+      MobileDragDrop.polyfill({
+        // holdToDrag allows users to still scroll the page on their phone
+        // They need to press and hold for 250ms to pick up an item
+        holdToDrag: 250 
+      });
+      // Required by modern mobile browsers so the polyfill can prevent scrolling during drag
+      window.addEventListener('touchmove', function() {}, { passive: false });
+
       /* ==================================================================
    STATE
    ================================================================== */
